@@ -25,6 +25,13 @@ export interface WorkflowConfig {
   device?: string;
   username?: string;
   password?: string;
+  // New advanced search filters
+  category?: string;
+  priceMin?: number;
+  priceMax?: number;
+  brand?: string;
+  sortBy?: string;
+  // Legacy fields for other workflow types
   searchQuery?: string;
   productId?: string;
   quantity?: number;
@@ -39,11 +46,18 @@ interface WorkflowConfigFormProps {
 const WorkflowConfigForm: React.FC<WorkflowConfigFormProps> = ({ onSubmit, isSubmitting }) => {
   const [config, setConfig] = useState<WorkflowConfig>({
     workflowType: 'login',
-    url: 'https://example.com',
+    url: 'https://demo.nopcommerce.com',
     browser: 'chrome',
     device: 'desktop',
     username: '',
     password: '',
+    // New search filters
+    category: '',
+    priceMin: undefined,
+    priceMax: undefined,
+    brand: '',
+    sortBy: 'default',
+    // Legacy fields
     searchQuery: '',
     productId: '',
     quantity: 1,
@@ -63,6 +77,12 @@ const WorkflowConfigForm: React.FC<WorkflowConfigFormProps> = ({ onSubmit, isSub
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setConfig(prev => ({ ...prev, [name]: parseInt(value, 10) || 0 }));
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const numValue = value === '' ? undefined : parseFloat(value);
+    setConfig(prev => ({ ...prev, [name]: numValue }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -176,17 +196,99 @@ const WorkflowConfigForm: React.FC<WorkflowConfigFormProps> = ({ onSubmit, isSub
             )}
 
             {(config.workflowType === 'search' || config.workflowType === 'full_purchase') && (
+              <>
+                {/* Category Filter */}
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel id="category-label">Category</InputLabel>
+                    <Select
+                      labelId="category-label"
+                      name="category"
+                      value={config.category || ''}
+                      label="Category"
+                      onChange={handleSelectChange}
+                    >
+                      <MenuItem value="">All Categories</MenuItem>
+                      <MenuItem value="computers">Computers</MenuItem>
+                      <MenuItem value="desktops">Desktops</MenuItem>
+                      <MenuItem value="notebooks">Notebooks</MenuItem>
+                      <MenuItem value="software">Software</MenuItem>
+                      <MenuItem value="electronics">Electronics</MenuItem>
+                      <MenuItem value="camera-photo">Camera & Photo</MenuItem>
+                      <MenuItem value="cell-phones">Cell Phones</MenuItem>
+                      <MenuItem value="apparel">Apparel</MenuItem>
+                      <MenuItem value="shoes">Shoes</MenuItem>
+                      <MenuItem value="clothing">Clothing</MenuItem>
+                      <MenuItem value="accessories">Accessories</MenuItem>
+                      <MenuItem value="digital-downloads">Digital Downloads</MenuItem>
+                      <MenuItem value="books">Books</MenuItem>
+                      <MenuItem value="jewelry">Jewelry</MenuItem>
+                      <MenuItem value="gift-cards">Gift Cards</MenuItem>
+                    </Select>
+                    <FormHelperText>Select product category to filter</FormHelperText>
+                  </FormControl>
+                </Grid>
+
+                {/* Price Range */}
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    fullWidth
+                    label="Min Price"
+                    name="priceMin"
+                    type="number"
+                    value={config.priceMin || ''}
+                    onChange={handlePriceChange}
+                    InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+                    helperText="Minimum price filter"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    fullWidth
+                    label="Max Price"
+                    name="priceMax"
+                    type="number"
+                    value={config.priceMax || ''}
+                    onChange={handlePriceChange}
+                    InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+                    helperText="Maximum price filter"
+                  />
+                </Grid>
+
+                {/* Brand Filter */}
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Search Query"
-                  name="searchQuery"
-                  value={config.searchQuery}
+                    label="Brand"
+                    name="brand"
+                    value={config.brand || ''}
                   onChange={handleChange}
-                  helperText="Product or keyword to search for"
-                  required
+                    helperText="Filter by brand/manufacturer name"
                 />
               </Grid>
+
+                {/* Sort By */}
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel id="sort-label">Sort By</InputLabel>
+                    <Select
+                      labelId="sort-label"
+                      name="sortBy"
+                      value={config.sortBy || 'default'}
+                      label="Sort By"
+                      onChange={handleSelectChange}
+                    >
+                      <MenuItem value="default">Default</MenuItem>
+                      <MenuItem value="name_asc">Name: A to Z</MenuItem>
+                      <MenuItem value="name_desc">Name: Z to A</MenuItem>
+                      <MenuItem value="price_asc">Price: Low to High</MenuItem>
+                      <MenuItem value="price_desc">Price: High to Low</MenuItem>
+                      <MenuItem value="created">Created Date</MenuItem>
+                    </Select>
+                    <FormHelperText>Choose how to sort results</FormHelperText>
+                  </FormControl>
+                </Grid>
+              </>
             )}
 
             {(config.workflowType === 'add_to_cart' || 

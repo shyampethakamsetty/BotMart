@@ -55,12 +55,12 @@ export default function TestDetails() {
     }
   }, [router]);
 
-  // Fetch test details
-  const { data: testDetail, isLoading } = useQuery<TestDetail>(
+  // Fetch test details (use task status endpoint)
+  const { data: taskData, isLoading } = useQuery<any>(
     ['testDetail', id],
     async () => {
       if (!id) return null;
-      const response = await axios.get(`/api/workflows/${id}`, {
+      const response = await axios.get(`/api/workflows/task/${id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       return response.data;
@@ -71,41 +71,32 @@ export default function TestDetails() {
     }
   );
 
-  // For demo purposes, create mock data if API fails
-  const mockTestDetail: TestDetail = {
-    id: id as string || '1',
-    workflow_type: 'login',
-    status: 'success',
-    result: 'Login successful',
-    created_at: '2023-09-12T10:30:00Z',
-    target_url: 'https://example.com',
-    screenshots: [
-      'https://via.placeholder.com/800x600?text=Login+Page',
-      'https://via.placeholder.com/800x600?text=Entering+Credentials',
-      'https://via.placeholder.com/800x600?text=Dashboard+After+Login',
-    ],
-    logs: [
-      '[2023-09-12T10:30:00Z] Starting login workflow',
-      '[2023-09-12T10:30:01Z] Navigating to https://example.com/login',
-      '[2023-09-12T10:30:02Z] Page loaded successfully',
-      '[2023-09-12T10:30:03Z] Found username field',
-      '[2023-09-12T10:30:04Z] Found password field',
-      '[2023-09-12T10:30:05Z] Entered credentials',
-      '[2023-09-12T10:30:06Z] Clicked login button',
-      '[2023-09-12T10:30:08Z] Login successful',
-      '[2023-09-12T10:30:09Z] Redirected to dashboard',
-      '[2023-09-12T10:30:10Z] Workflow completed successfully',
-    ],
-    config: {
-      workflow_type: 'login',
-      target_url: 'https://example.com',
-      username: 'testuser',
-      password: '********',
-    },
-    execution_time: 10.5,
-  };
+  // Map filesystem paths to static URLs for screenshots
+  const screenshots: string[] = (taskData?.screenshots || []).map((p: string) =>
+    p && p.startsWith('/data/screenshots')
+      ? p.replace('/data/screenshots', '/api/static/screenshots')
+      : p
+  );
 
-  const testData = testDetail || mockTestDetail;
+  // Build a display model combining taskData and defaults
+  const testData: TestDetail = {
+    id: (id as string) || taskData?.id || '',
+    workflow_type: taskData?.result?.action || 'login',
+    status: taskData?.status || 'pending',
+    result: typeof taskData?.result === 'string' ? taskData.result : JSON.stringify(taskData?.result ?? ''),
+    created_at: new Date().toISOString(),
+    target_url: taskData?.result?.target_url || '',
+    screenshots,
+    logs: taskData?.logs || [],
+    config: {
+      workflow_type: taskData?.result?.action || 'login',
+      target_url: taskData?.result?.target_url || '',
+      username: taskData?.result?.email,
+      search_query: taskData?.result?.query,
+      product_url: taskData?.result?.product_url,
+    },
+    execution_time: 0,
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -297,7 +288,7 @@ export default function TestDetails() {
             <AccordionDetails>
               <Grid container spacing={2}>
                 {testData.screenshots && testData.screenshots.length > 0 ? (
-                  testData.screenshots.map((screenshot, index) => (
+                  testData.screenshots.map((screenshot: string, index: number) => (
                     <Grid item xs={12} md={4} key={index}>
                       <Card>
                         <CardContent>
@@ -306,7 +297,7 @@ export default function TestDetails() {
                           </Typography>
                           <Box 
                             component="img" 
-                            src={screenshot} 
+                            src={screenshot}
                             alt={`Test step ${index + 1}`}
                             sx={{ 
                               width: '100%', 
@@ -345,7 +336,7 @@ export default function TestDetails() {
                 }}
               >
                 {testData.logs && testData.logs.length > 0 ? (
-                  testData.logs.map((log, index) => (
+                  testData.logs.map((log: string, index: number) => (
                     <Typography key={index} variant="body2" sx={{ whiteSpace: 'pre-wrap', mb: 0.5 }}>
                       {log}
                     </Typography>

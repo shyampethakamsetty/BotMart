@@ -38,6 +38,13 @@ interface TestConfig {
   target_url: string;
   username?: string;
   password?: string;
+  // New advanced search filters
+  category?: string;
+  price_min?: number;
+  price_max?: number;
+  brand?: string;
+  sort_by?: string;
+  // Legacy fields
   search_query?: string;
   product_url?: string;
 }
@@ -56,14 +63,22 @@ export default function TestRunner() {
   const [activeStep, setActiveStep] = useState(0);
   const [testConfig, setTestConfig] = useState<TestConfig>({
     workflow_type: 'login',
-    target_url: 'https://example.com',
+    target_url: 'https://demo.nopcommerce.com',
     username: '',
     password: '',
+    // New search filters
+    category: '',
+    price_min: undefined,
+    price_max: undefined,
+    brand: '',
+    sort_by: 'default',
+    // Legacy fields
     search_query: '',
     product_url: '',
   });
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [error, setError] = useState('');
+  const [pollingId, setPollingId] = useState<string | null>(null);
 
   // Check for authentication
   useEffect(() => {
@@ -79,12 +94,13 @@ export default function TestRunner() {
       const response = await axios.post('/api/workflows/run', config, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
-      return response.data;
+      return response.data as TestResult;
     },
     {
       onSuccess: (data) => {
         setTestResult(data);
         setActiveStep(2);
+        setPollingId(data.id);
       },
       onError: (err: any) => {
         setError(err.response?.data?.detail || 'Failed to run test');
@@ -125,6 +141,20 @@ export default function TestRunner() {
 
   const steps = ['Select Workflow Type', 'Configure Test Parameters', 'View Results'];
 
+  const getAlertSeverity = (status?: string) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'success') return 'success';
+    if (s === 'pending' || s === 'queued' || s === 'running') return 'info';
+    return 'error';
+  };
+
+  const getAlertText = (status?: string) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'success') return 'Test completed successfully';
+    if (s === 'pending' || s === 'queued' || s === 'running') return 'Test queued';
+    return 'Test failed';
+  };
+
   const getStepContent = (step: number) => {
     switch (step) {
       case 0:
@@ -157,8 +187,9 @@ export default function TestRunner() {
                 )}
                 {testConfig.workflow_type === 'search' && (
                   <Typography>
-                    Tests the search functionality of an e-commerce website. The test will enter a search
-                    query and verify search results are displayed.
+                    Tests the advanced product filtering functionality of an e-commerce website. The test will 
+                    navigate to product categories, apply filters (price range, brand, sorting), and verify 
+                    filtered results are displayed correctly.
                   </Typography>
                 )}
                 {testConfig.workflow_type === 'add_to_cart' && (
@@ -217,18 +248,85 @@ export default function TestRunner() {
               )}
 
               {testConfig.workflow_type === 'search' && (
-                <Grid item xs={12}>
+                <>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Category</InputLabel>
+                      <Select
+                        name="category"
+                        value={testConfig.category || ''}
+                        onChange={handleInputChange}
+                        label="Category"
+                      >
+                        <MenuItem value="">All Categories</MenuItem>
+                        <MenuItem value="computers">Computers</MenuItem>
+                        <MenuItem value="desktops">Desktops</MenuItem>
+                        <MenuItem value="notebooks">Notebooks</MenuItem>
+                        <MenuItem value="electronics">Electronics</MenuItem>
+                        <MenuItem value="camera-photo">Camera & Photo</MenuItem>
+                        <MenuItem value="cell-phones">Cell Phones</MenuItem>
+                        <MenuItem value="apparel">Apparel</MenuItem>
+                        <MenuItem value="books">Books</MenuItem>
+                        <MenuItem value="jewelry">Jewelry</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  
+                  <Grid item xs={6} md={3}>
+                    <TextField
+                      fullWidth
+                      label="Min Price"
+                      name="price_min"
+                      type="number"
+                      value={testConfig.price_min || ''}
+                      onChange={handleInputChange}
+                      inputProps={{ min: 0, step: 0.01 }}
+                      helperText="Minimum price"
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={6} md={3}>
+                    <TextField
+                      fullWidth
+                      label="Max Price"
+                      name="price_max"
+                      type="number"
+                      value={testConfig.price_max || ''}
+                      onChange={handleInputChange}
+                      inputProps={{ min: 0, step: 0.01 }}
+                      helperText="Maximum price"
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12} md={6}>
                   <TextField
-                    required
                     fullWidth
-                    label="Search Query"
-                    name="search_query"
-                    value={testConfig.search_query}
+                      label="Brand"
+                      name="brand"
+                      value={testConfig.brand || ''}
                     onChange={handleInputChange}
-                    helperText="The search term to test"
-                    aria-label="Search Query"
+                      helperText="Filter by brand name"
                   />
                 </Grid>
+                  
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Sort By</InputLabel>
+                      <Select
+                        name="sort_by"
+                        value={testConfig.sort_by || 'default'}
+                        onChange={handleInputChange}
+                        label="Sort By"
+                      >
+                        <MenuItem value="default">Default</MenuItem>
+                        <MenuItem value="name_asc">Name: A to Z</MenuItem>
+                        <MenuItem value="name_desc">Name: Z to A</MenuItem>
+                        <MenuItem value="price_asc">Price: Low to High</MenuItem>
+                        <MenuItem value="price_desc">Price: High to Low</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </>
               )}
 
               {testConfig.workflow_type === 'add_to_cart' && (
@@ -259,11 +357,18 @@ export default function TestRunner() {
             ) : testResult ? (
               <Box>
                 <Alert 
-                  severity={testResult.status === 'success' ? 'success' : 'error'}
+                  severity={getAlertSeverity(testResult.status) as any}
                   sx={{ mb: 3 }}
                 >
-                  Test {testResult.status === 'success' ? 'completed successfully' : 'failed'}
+                  {getAlertText(testResult.status)}
                 </Alert>
+                {/* show a waiting message if the test is still running */}
+                {(testResult.status === 'pending' || testResult.status === 'queued' || testResult.status === 'running') && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <CircularProgress size={24} sx={{ mr: 1 }} />
+                    <Typography variant="body2">Waiting for result...</Typography>
+                  </Box>
+                )}
 
                 <Card sx={{ mb: 3 }}>
                   <CardContent>
@@ -370,6 +475,43 @@ export default function TestRunner() {
         return 'Unknown step';
     }
   };
+
+  // Poll task status when we have a task id
+  useEffect(() => {
+    if (!pollingId) return;
+
+    const controller = new AbortController();
+    const interval = setInterval(async () => {
+      try {
+        const res = await axios.get(`/api/workflows/task/${pollingId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          signal: controller.signal,
+        });
+        const data = res.data as Partial<TestResult> & { status: string };
+        setTestResult((prev) => ({
+          id: prev?.id || pollingId,
+          status: data.status || prev?.status || 'pending',
+          result: typeof data.result === 'string' ? data.result : JSON.stringify(data.result || prev?.result || ''),
+          screenshots: (data as any).screenshots || prev?.screenshots || [],
+          logs: (data as any).logs || prev?.logs || [],
+          created_at: prev?.created_at || new Date().toISOString(),
+        }));
+
+        const s = (data.status || '').toLowerCase();
+        if (s === 'success' || s === 'failed') {
+          clearInterval(interval);
+          setPollingId(null);
+        }
+      } catch (e) {
+        // ignore transient errors
+      }
+    }, 2000);
+
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
+  }, [pollingId]);
 
   return (
     <Layout title="Test Runner">

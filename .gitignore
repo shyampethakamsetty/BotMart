@@ -88,3 +88,12 @@ celerybeat.pid
 .env.development.local
 .env.test.local
 .env.production.local
+
+#backup files
+backup/
+
+b.sh
+d.sh
+w.sh
+
+data/

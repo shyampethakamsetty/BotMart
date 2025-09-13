@@ -118,15 +118,6 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
           },
         },
       },
-      MuiFocusVisible: {
-        styleOverrides: {
-          root: {
-            outline: '2px solid',
-            outlineColor: mode === 'dark' ? '#00E5FF' : '#0066CC',
-            outlineOffset: 2,
-          },
-        },
-      },
     },
     typography: {
       fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',

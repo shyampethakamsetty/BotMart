@@ -15,8 +15,6 @@ services:
 
   redis:
     image: redis:7
-    ports:
-      - '6379:6379'
 
   backend:
     build:
@@ -32,6 +30,7 @@ services:
       - '8001:8000'
     volumes:
       - ./backend:/app/backend
+      - ./data:/data
 
   worker:
     build:
@@ -44,6 +43,7 @@ services:
       - postgres
     volumes:
       - ./workers:/app/workers
+      - ./data:/data
       
   dashboard:
     build:
@@ -57,6 +57,7 @@ services:
       - backend
     volumes:
       - ./dashboard:/app/dashboard
+      - /app/dashboard/node_modules
 
 volumes:
   pgdata:

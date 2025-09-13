@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Boolean, LargeBinary
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.models.base import Base
@@ -55,3 +55,29 @@ class Proxy(Base):
     password = Column(String(255), nullable=True)
     last_checked = Column(DateTime)
     healthy = Column(Boolean, default=True)
+
+# New persistence models
+class TaskRun(Base):
+    __tablename__ = 'task_runs'
+    id = Column(Integer, primary_key=True)
+    task_id = Column(String(64), unique=True, index=True, nullable=False)  # Celery task UUID
+    workflow_id = Column(Integer, nullable=True)
+    user_id = Column(Integer, nullable=True)
+    status = Column(String(50), default='pending')
+    result = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    finished_at = Column(DateTime)
+
+    screenshots = relationship('Screenshot', back_populates='task_run', cascade='all, delete-orphan')
+
+class Screenshot(Base):
+    __tablename__ = 'screenshots'
+    id = Column(Integer, primary_key=True)
+    task_id = Column(String(64), ForeignKey('task_runs.task_id'), index=True, nullable=False)
+    filename = Column(String(255))
+    content_type = Column(String(64), default='image/png')
+    data = Column(LargeBinary)  # bytea
+    created_at = Column(DateTime, default=datetime.utcnow)
+    step_index = Column(Integer, default=0)
+
+    task_run = relationship('TaskRun', back_populates='screenshots')
