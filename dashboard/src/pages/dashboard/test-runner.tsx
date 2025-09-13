@@ -31,6 +31,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useMutation } from 'react-query';
 import axios from 'axios';
 import Layout from '@/components/Layout';
+import WorkflowProgressDisplay from '@/components/WorkflowProgressDisplay';
 
 // Types
 interface TestConfig {
@@ -219,16 +220,17 @@ export default function TestRunner() {
                 />
               </Grid>
 
-              {testConfig.workflow_type === 'login' && (
+              {(testConfig.workflow_type === 'login' || testConfig.workflow_type === 'search' || testConfig.workflow_type === 'add_to_cart') && (
                 <>
                   <Grid item xs={12} md={6}>
                     <TextField
                       required
                       fullWidth
-                      label="Username"
+                      label="Username/Email"
                       name="username"
                       value={testConfig.username}
                       onChange={handleInputChange}
+                      helperText={testConfig.workflow_type !== 'login' ? "Required for login step" : ""}
                       aria-label="Username"
                     />
                   </Grid>
@@ -241,6 +243,7 @@ export default function TestRunner() {
                       type="password"
                       value={testConfig.password}
                       onChange={handleInputChange}
+                      helperText={testConfig.workflow_type !== 'login' ? "Required for login step" : ""}
                       aria-label="Password"
                     />
                   </Grid>
@@ -400,42 +403,11 @@ export default function TestRunner() {
                   </CardContent>
                 </Card>
 
-                <Accordion defaultExpanded>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="h6">Screenshots</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Grid container spacing={2}>
-                      {testResult.screenshots && testResult.screenshots.length > 0 ? (
-                        testResult.screenshots.map((screenshot, index) => (
-                          <Grid item xs={12} md={6} key={index}>
-                            <Card>
-                              <CardContent>
-                                <Typography variant="body2" color="text.secondary" gutterBottom>
-                                  Step {index + 1}
-                                </Typography>
-                                <Box 
-                                  component="img" 
-                                  src={screenshot} 
-                                  alt={`Test step ${index + 1}`}
-                                  sx={{ 
-                                    width: '100%', 
-                                    border: '1px solid #eee',
-                                    borderRadius: 1,
-                                  }}
-                                />
-                              </CardContent>
-                            </Card>
-                          </Grid>
-                        ))
-                      ) : (
-                        <Grid item xs={12}>
-                          <Typography>No screenshots available</Typography>
-                        </Grid>
-                      )}
-                    </Grid>
-                  </AccordionDetails>
-                </Accordion>
+                <WorkflowProgressDisplay 
+                  workflowType={testConfig?.workflow_type || 'login'}
+                  screenshots={testResult?.screenshots || []}
+                  status={testResult?.status || 'pending'}
+                />
 
                 <Accordion>
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>

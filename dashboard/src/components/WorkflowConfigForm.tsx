@@ -106,9 +106,9 @@ const WorkflowConfigForm: React.FC<WorkflowConfigFormProps> = ({ onSubmit, isSub
                   value={config.workflowType}
                   onChange={handleChange}
                 >
-                  <FormControlLabel value="login" control={<Radio />} label="Login" />
-                  <FormControlLabel value="search" control={<Radio />} label="Search" />
-                  <FormControlLabel value="add_to_cart" control={<Radio />} label="Add to Cart" />
+                  <FormControlLabel value="login" control={<Radio />} label="Login Only" />
+                  <FormControlLabel value="search" control={<Radio />} label="Login + Search" />
+                  <FormControlLabel value="add_to_cart" control={<Radio />} label="Login + Search + Add to Cart" />
                   <FormControlLabel value="checkout" control={<Radio />} label="Checkout" />
                   <FormControlLabel value="full_purchase" control={<Radio />} label="Full Purchase Flow" />
                 </RadioGroup>
@@ -169,15 +169,17 @@ const WorkflowConfigForm: React.FC<WorkflowConfigFormProps> = ({ onSubmit, isSub
             </Grid>
 
             {/* Conditional fields based on workflow type */}
-            {(config.workflowType === 'login' || config.workflowType === 'full_purchase') && (
+            {/* Login credentials - now required for search and add_to_cart too since they include login */}
+            {(config.workflowType === 'login' || config.workflowType === 'search' || config.workflowType === 'add_to_cart' || config.workflowType === 'full_purchase') && (
               <>
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
-                    label="Username"
+                    label="Username/Email"
                     name="username"
                     value={config.username}
                     onChange={handleChange}
+                    helperText={config.workflowType !== 'login' ? "Required for login step" : ""}
                     required
                   />
                 </Grid>
@@ -189,6 +191,7 @@ const WorkflowConfigForm: React.FC<WorkflowConfigFormProps> = ({ onSubmit, isSub
                     type="password"
                     value={config.password}
                     onChange={handleChange}
+                    helperText={config.workflowType !== 'login' ? "Required for login step" : ""}
                     required
                   />
                 </Grid>

@@ -21,6 +21,7 @@ import axios from 'axios';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Layout from '@/components/Layout';
+import WorkflowProgressDisplay from '@/components/WorkflowProgressDisplay';
 
 // Types
 interface TestDetail {
@@ -279,44 +280,13 @@ export default function TestDetails() {
           </Card>
         </Grid>
 
-        {/* Screenshots */}
+        {/* Workflow Progress and Screenshots */}
         <Grid item xs={12}>
-          <Accordion defaultExpanded>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6">Screenshots</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Grid container spacing={2}>
-                {testData.screenshots && testData.screenshots.length > 0 ? (
-                  testData.screenshots.map((screenshot: string, index: number) => (
-                    <Grid item xs={12} md={4} key={index}>
-                      <Card>
-                        <CardContent>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Step {index + 1}
-                          </Typography>
-                          <Box 
-                            component="img" 
-                            src={screenshot}
-                            alt={`Test step ${index + 1}`}
-                            sx={{ 
-                              width: '100%', 
-                              border: '1px solid #eee',
-                              borderRadius: 1,
-                            }}
-                          />
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))
-                ) : (
-                  <Grid item xs={12}>
-                    <Typography>No screenshots available</Typography>
-                  </Grid>
-                )}
-              </Grid>
-            </AccordionDetails>
-          </Accordion>
+          <WorkflowProgressDisplay 
+            workflowType={testData.workflow_type}
+            screenshots={testData.screenshots}
+            status={testData.status}
+          />
         </Grid>
 
         {/* Logs */}
